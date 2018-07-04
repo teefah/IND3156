@@ -20,6 +20,7 @@ At line 59 of file fourier.f (unit = 1, file = 'fft.xlsx')
 Fortran runtime error: Bad real number in item 1 of list input 
 ```
 
+The code doesn't take Excel files. The data needs to be in plain text with 2 columns:time and space. ```write``` was added (see below) to verify if the file actually gets open and read. The trick is to only have the spacial data (not temporal) in a column in plain text. When you do, it will print out all the fourier transforms next to the data. 
 
 
 
@@ -29,7 +30,7 @@ Fortran runtime error: Bad real number in item 1 of list input
 Code
 ----------------------------------------------------------------------------------------------------------------------------
 
-Below you'll find the relevant lines of the modified code and explain what they each mean. Then, I'll modify it to [...]
+Below you'll find the relevant lines of the modified code and explain what they each mean. Then, I'll modify it to plot the data and frequencies.
 
 
 ```implicit real*8 (a-h,o-z)```
