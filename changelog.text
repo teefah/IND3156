@@ -1,1 +1,204 @@
-
+	program fft
+	implicit real*8 (a-h,o-z)
+	character*12 if,of
+	character ans,yes
+	dimension data(20000)
+	yes='y'
+10	print *,'FFT forward (of real function) <1> or backward <2>?'
+	read(5,*) idir
+	print *,'input file name?'
+	read(5,15) if
+15	format(a12)
+	call input(data,dt,ndata,idir,if)
+	if(ndata.lt.2) go to 10
+	call prep(data,nbit,ndata)
+	call swap(data,nbit)
+	call calc(data,nbit,idir)
+	print *,'output real/imag into separate files?'
+	read(5,55) ans
+	if(ans.eq.yes) then
+		print *,'output file name for real part?'
+		read(5,15) of
+		call output(data,dt,ndata,of,idir,1)
+		print *,'output file name for imaginary part?'
+		read(5,15) of
+		call output(data,dt,ndata,of,idir,2)
+	else
+		print *,'output file name?'
+		read(5,15) of
+		call output(data,dt,ndata,of,idir,3)
+	endif
+	print *,'start over?'
+	read(5,55) ans
+55	format(a1)
+	if(ans.eq.yes) go to 10
+	stop
+	end
+c
+c
+c
+	subroutine input(data,dt,ndata,idir,if)
+	implicit real*8 (a-h,o-z)
+	dimension data(1)
+	character*12 if
+	open(1,file=if)
+	rewind(1)
+	ndata=0
+	if(idir.eq.1) then
+		do 20 i=1,10000
+			j=2*(i-1)+1
+			read(1,*,end=30) t,data(j)
+			data(j+1)=0.d0
+			t0=t1
+			t1=t
+			ndata=ndata+1
+20		continue
+	else
+		do 50 i=1,10000
+			j=2*(i-1)+1
+			read(1,*,end=30) t,data(j)
+			read(1,*,end=30) t,data(j+1)
+			ndata=ndata+1
+			t0=t1
+			t1=t
+50		continue
+	endif
+30	close(1)
+	dt=t1-t0
+	return
+	end
+c
+c
+c
+	subroutine output(data,dt,ndata,of,idir,mout)
+	implicit real*8 (a-h,o-z)
+	dimension data(1)
+	character*12 of
+	open(2,file=of)
+	rewind(2)
+	ddt=1.d0/(dfloat(ndata)*dt)
+	if(idir.eq.2) then
+		factor=1.d0/dfloat(ndata)
+		n2=ndata
+	else
+		factor=1.d0
+		n2=ndata/2
+	endif
+	if(mout.eq.1) then
+		do 40 i=1,n2
+			t=(i-1)*ddt
+			j=2*(i-1)+1
+			write(2,45) t,data(j)*factor
+40		continue
+	elseif(mout.eq.2) then
+		do 50 i=1,n2
+			t=(i-1)*ddt
+			j=2*i
+			write(2,45) t,data(j)*factor
+50		continue
+	else
+		do 60 i=1,n2
+			t=(i-1)*ddt
+			j=2*(i-1)+1
+			write(2,45) t,data(j)*factor
+			write(2,45) t,data(j+1)*factor
+60		continue
+	endif
+45	format(1x,1p,e12.5,', ',e12.5)
+	close(2)
+	return
+	end
+c
+c
+c
+	subroutine calc(data,nbit,idir)
+	implicit real*8 (a-h,o-z)
+	dimension data(1)
+	n=2**nbit
+	do 10 i=1,nbit
+		ke=2**i
+		ke1=ke/2
+		ur=1.d0
+		ui=0.d0
+		th=3.141592654/dfloat(ke1)
+		if(idir.eq.2) th=-th
+		wr=dcos(th)
+		wi=dsin(th)
+		do 20 j=1,ke1
+			do 30 k=j,n,ke
+				kp=k+ke1
+				mp=2*(kp-1)+1
+				mk=2*(k-1)+1
+				tr=data(mp)*ur-data(mp+1)*ui
+				ti=data(mp)*ui+data(mp+1)*ur
+				data(mp)=data(mk)-tr
+				data(mp+1)=data(mk+1)-ti
+				data(mk)=data(mk)+tr
+				data(mk+1)=data(mk+1)+ti
+30			continue
+			temp=ur*wr-ui*wi
+			ui=ur*wi+ui*wr
+			ur=temp
+20		continue
+10	continue
+	return
+	end
+c
+c
+c
+	subroutine prep(data,nbit,ndata)
+	implicit real*8 (a-h,o-z)
+	dimension data(1)
+	do 10 i=1,30
+		n=2**i
+		if(ndata.le.n) then
+			nbit=i
+			do 20 j=ndata+1,n
+				jj=2*(j-1)+1
+				data(jj)=0.d0
+				data(jj+1)=0.d0
+20			continue
+			go to 30
+		endif
+10	continue
+30	ndata=n
+	return
+	end
+c
+c
+c
+	function nrev(i,nbit)
+	n=0
+	k=i-1
+	do 10 l=1,nbit
+		n=2*n+mod(k,2)
+		k=int(k/2)
+10	continue
+	nrev=n+1
+	return 
+	end	
+c
+c
+c
+	subroutine swap(data,nbit)
+	implicit real*8 (a-h,o-z)
+	dimension data(1)
+	n=2**nbit
+	do 10 i=1,n
+		m=nrev(i,nbit)
+		if(m.gt.i) then
+			j=2*(i-1)+1
+			k=2*(m-1)+1
+			tempr=data(j)
+			tempi=data(j+1)
+			data(j)=data(k)
+			data(j+1)=data(k+1)
+			data(k)=tempr
+			data(k+1)=tempi
+		endif
+10	continue
+	return
+	end
+c
+c
+c
