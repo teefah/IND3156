@@ -140,6 +140,7 @@ c
 			ui=ur*wi+ui*wr
 			ur=temp
 20		continue
+                endif 
 10	continue
 	return
 	end
