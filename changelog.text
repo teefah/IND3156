@@ -52,6 +52,7 @@ c
 			t0=t1
 			t1=t
 			ndata=ndata+1
+			write(6,*) t,data(j)
 20		continue
 	else
 		do 50 i=1,10000
